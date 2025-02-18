@@ -46,7 +46,7 @@ After activating the virtual environment, install all required dependencies usin
 pip install -r requirements.txt
 ```
 ### **4️⃣ Set Up Environment Variables**  
-Create a `.env` file in the project's root directory and add the following environment variables and add your credentials, for TWILIO credentials you have create an account on TWILIO:
+Create a `.env` file in the project's root directory and add the following environment variables and add your credentials, for TWILIO credentials you have to create an account on TWILIO:
 
 ```env
 # Email settings
