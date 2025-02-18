@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Testing - Authentication Service</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; padding: 20px; }
+        input, button { margin: 5px; padding: 8px; width: 300px; display: block; }
+        textarea { width: 100%; height: 150px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h2>🔑 User Authentication API Testing</h2>
+
+    <!-- Register API -->
+    <h3>1️⃣ Register</h3>
+    <input type="text" id="regUsername" placeholder="Username">
+    <input type="text" id="regFirstName" placeholder="First Name">
+    <input type="text" id="regLastName" placeholder="Last Name">
+    <input type="text" id="regPhone" placeholder="Phone Number with Regional Code (i.e. +91)">
+    <input type="email" id="regEmail" placeholder="Email">
+    <input type="password" id="regPassword" placeholder="Password">
+    <button onclick="register()">Register</button>
+
+    <!-- Verify Phone OTP -->
+    <h3>2️⃣ Verify Phone OTP</h3>
+    <input type="text" id="otpPhone" placeholder="Phone Number with Regional Code (i.e. +91)">
+    <input type="text" id="otpCode" placeholder="OTP Code">
+    <button onclick="verifyPhoneOTP()">Verify OTP</button>
+
+    <!-- Login API -->
+    <h3>3️⃣ Login</h3>
+    <input type="text" id="loginPhone" placeholder="Phone Number with Regional Code (i.e. +91)">
+    <button onclick="login()">Login</button>
+
+    <!-- Verify Email OTP -->
+    <h3>4️⃣ Verify Email OTP</h3>
+    <input type="email" id="emailOtpEmail" placeholder="Email">
+    <input type="text" id="emailOtpCode" placeholder="OTP Code">
+    <button onclick="verifyEmailOTP()">Verify Email OTP</button>
+
+    <!-- Reset Password -->
+    <h3>5️⃣ Reset Password</h3>
+    <input type="email" id="resetEmail" placeholder="Email">
+    <button onclick="resetPassword()">Reset Password</button>
+
+    <!-- Update Account API -->
+    <h3>6️⃣ Update Account</h3>
+    <input type="text" id="updateUsername" placeholder="Username">
+    <input type="text" id="updateFirstName" placeholder="First Name">
+    <input type="text" id="updateLastName" placeholder="Last Name">
+    <input type="email" id="updateEmail" placeholder="Email">
+    <input type="text" id="updatePhoneNumber" placeholder="New Phone Number with Regional Code (i.e. +91)">
+    <input type="password" id="updatePassword" placeholder="New Password">
+    <button onclick="updateAccount()">Update Account</button>
+
+    <!-- API Response Section -->
+    <h3>🔍 API Response</h3>
+    <textarea id="responseOutput" readonly></textarea>
+
+    <script>
+
+        function showResponse(response) {
+            document.getElementById("responseOutput").value = JSON.stringify(response, null, 4);
+        }
+
+        // 1️⃣ Register API
+        function register() {
+            let username = document.getElementById("regUsername").value;
+            let firstName = document.getElementById("regFirstName").value;
+            let lastName = document.getElementById("regLastName").value;
+            let phone = document.getElementById("regPhone").value;
+            let email = document.getElementById("regEmail").value;
+            let password = document.getElementById("regPassword").value;
+
+            fetch("/api/auth/register/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username: username,
+                    first_name: firstName,
+                    last_name: lastName,
+                    phone_number: phone,
+                    email: email,
+                    password: password
+                })
+            })
+            .then(response => response.json())
+            .then(data => showResponse(data))
+            .catch(error => showResponse({ error: error.toString() }));
+        }
+
+        // 2️⃣ Verify Phone OTP API
+        function verifyPhoneOTP() {
+            let phone = document.getElementById("otpPhone").value.trim();
+            let otp = document.getElementById("otpCode").value.trim();
+        
+            fetch("/api/auth/login/verify-otp/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone_number: phone, otp: otp })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.access_token) {
+                    // Store the access token in localStorage
+                    localStorage.setItem("accessToken", data.access_token);
+                    showResponse({ message: "OTP verified successfully." });
+                } else {
+                    showResponse({ error: "OTP verification failed. No token received." });
+                }
+            })
+            .catch(error => showResponse({ error: error.message }));
+        }
+
+        // 3️⃣ Login API
+        function login() {
+            let phone = document.getElementById("loginPhone").value;
+
+            fetch("/api/auth/login/request-otp/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone_number: phone })
+            })
+            .then(response => response.json())
+            .then(data => {
+                showResponse(data);
+            })
+            .catch(error => showResponse({ error: error.toString() }));
+        }
+
+        // 4️⃣ Verify Email OTP API
+        function verifyEmailOTP() {
+            let email = document.getElementById("emailOtpEmail").value;
+            let otp = document.getElementById("emailOtpCode").value;
+        
+            fetch("/api/auth/verify-email/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: email, otp: otp })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text); });
+                }
+                return response.json();
+            })
+            .then(data => showResponse(data))
+            .catch(error => {
+                console.error("Error:", error);
+                showResponse({ error: error.message });
+            });
+        }
+
+        // 5️⃣ Reset Password API
+        function resetPassword() {
+            let email = document.getElementById("resetEmail").value;
+
+            fetch("/api/auth/reset-password-request/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: email })
+            })
+            .then(response => response.json())
+            .then(data => showResponse(data))
+            .catch(error => showResponse({ error: error.toString() }));
+        }
+
+        // 6️⃣ Update Account API
+        function updateAccount() {
+            let username = document.getElementById("updateUsername").value.trim();
+            let firstName = document.getElementById("updateFirstName").value.trim();
+            let lastName = document.getElementById("updateLastName").value.trim();
+            let email = document.getElementById("updateEmail").value.trim();
+            let phone = document.getElementById("updatePhoneNumber").value.trim();
+            let password = document.getElementById("updatePassword").value;
+        
+            // Retrieve access token from local storage or another source
+            let accessToken = localStorage.getItem("accessToken");
+            
+            if (!accessToken) {
+                showResponse({ error: "Unauthorized: Please log in again." });
+                return;
+            }
+        
+            let updateData = {};
+        
+            // Add only fields that have values
+            if (username) updateData.username = username;
+            if (firstName) updateData.first_name = firstName;
+            if (lastName) updateData.last_name = lastName;
+            if (email) updateData.email = email;
+            if (phone) updateData.phone_number = phone;
+            if (password) updateData.password = password;
+        
+            fetch("/api/auth/update-account/", {
+                method: "PATCH",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + accessToken
+                },
+                body: JSON.stringify(updateData)
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    throw new Error("Unauthorized: Token expired or invalid. Please log in again.");
+                }
+                return response.json();
+            })
+            .then(data => showResponse(data))
+            .catch(error => showResponse({ error: error.message }));
+        }
+
+    </script>
+
+</body>
+</html>
